@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>새 게시물 만들기 • Clone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#000; --panel:#111; --text:#fff; --muted:#aaa; --line:#222; --accent:#3897f0;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text); font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* Top bar */
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      height:56px; display:flex; align-items:center; justify-content:center;
+      background:#0a0a0a; border-bottom:1px solid var(--line);
+    }
+    .topbar .back{position:absolute; left:12px; font-size:20px; cursor:pointer; color:#fff; text-decoration:none}
+    .topbar .title{font-weight:700}
+    .topbar .share{
+      position:absolute; right:12px;
+      background:var(--accent); color:#fff; border:none; border-radius:8px;
+      padding:8px 14px; font-weight:600; cursor:pointer;
+    }
+    .topbar .share:disabled{opacity:.4; cursor:not-allowed}
+
+    /* Layout */
+    .wrap{
+      display:grid; grid-template-columns:1.2fr .9fr; gap:0; height:calc(100vh - 56px);
+    }
+    @media (max-width: 980px){
+      .wrap{grid-template-columns:1fr; height:auto}
+    }
+
+    /* Left: canvas */
+    .canvas{
+      position:relative; background:#0a0a0a; display:flex; align-items:center; justify-content:center;
+      border-right:1px solid var(--line);
+      min-height:420px;
+    }
+    @media (max-width:980px){
+      .canvas{min-height:300px; border-right:none; border-bottom:1px solid var(--line)}
+    }
+
+    .drop{
+      position:relative; width:min(820px, 90%); aspect-ratio: 4/3;
+      border:2px dashed #2a2a2a; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--muted); text-align:center; padding:20px;
+      overflow:hidden; background:#0f0f0f;
+    }
+    .drop.dragover{border-color:#666}
+    .drop input[type="file"]{display:none}
+    .drop .hint{pointer-events:none}
+    .preview{
+      position:absolute; inset:0; display:none;
+      background:#000 center/contain no-repeat;
+    }
+
+    /* Tag bubble */
+    .tag{
+      position:absolute; transform:translate(-50%,-50%);
+      background:rgba(0,0,0,.7); color:#fff; border:1px solid #444; border-radius:14px;
+      padding:4px 8px; font-size:12px; white-space:nowrap; cursor:pointer;
+    }
+
+    /* Right: form */
+    .side{
+      height:100%; overflow:auto; background:#131313;
+    }
+    .panel{padding:16px 16px 24px 16px; border-bottom:1px solid var(--line)}
+    .me{
+      display:flex; align-items:center; gap:10px;
+    }
+    .me .avatar{
+      width:36px; height:36px; border-radius:50%; background:#333;
+    }
+    .me .name{font-weight:700}
+
+    .field{display:flex; flex-direction:column; gap:8px; margin-top:12px}
+    .field label{font-size:14px; color:#ccc}
+    .input, textarea{
+      width:100%; background:#0e0e0e; color:#fff; border:1px solid #2a2a2a; border-radius:8px;
+      padding:10px 12px; outline:none;
+    }
+    textarea{min-height:120px; resize:vertical}
+    .muted{font-size:12px; color:var(--muted)}
+    .row{display:flex; align-items:center; justify-content:space-between; gap:8px}
+
+    .accordion summary{
+      list-style:none; cursor:pointer; padding:14px 0; font-weight:600;
+    }
+    .accordion summary::-webkit-details-marker{display:none}
+    .accordion{border-bottom:1px solid var(--line)}
+    .pill{
+      border:1px solid #2a2a2a; border-radius:999px; padding:6px 10px; font-size:12px; color:#ddd;
+      display:inline-flex; align-items:center; gap:6px; margin-right:6px; margin-top:6px;
+    }
+    .pill .x{cursor:pointer}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    .small{font-size:12px}
+    .danger{color:#ff6b6b; cursor:pointer}
+  </style>
+</head>
+<body>
+  <!-- Top bar -->
+  <div class="topbar">
+    <a href="index.html" class="back">←</a>
+    <div class="title">새 게시물 만들기</div>
+    <button id="shareBtn" class="share" disabled>공유하기</button>
+  </div>
+
+  <!-- Content -->
+  <div class="wrap">
+    <!-- Left: image area -->
+    <section class="canvas">
+      <label class="drop" id="dropArea">
+        <input id="fileInput" type="file" accept="image/*" />
+        <div class="hint">
+          <div style="font-size:18px; font-weight:700; margin-bottom:6px">사진을 여기에 드롭하거나 클릭해서 선택</div>
+          <div class="small">JPG/PNG, 최대 10MB</div>
+        </div>
+        <div id="preview" class="preview" aria-label="image preview"></div>
+      </label>
+    </section>
+
+    <!-- Right: form -->
+    <aside class="side">
+      <div class="panel">
+        <div class="me">
+          <div class="avatar"></div>
+          <div class="name">okto.o0o0</div>
+        </div>
+
+        <div class="field">
+          <div class="row">
+            <label for="title">제목</label>
+            <div class="muted"><span id="titleCount">0</span>/50</div>
+          </div>
+          <input id="title" class="input" type="text" placeholder="제목을 입력하세요 (필수)" maxlength="50" required />
+        </div>
+
+        <div class="field">
+          <div class="row">
+            <label for="desc">설명</label>
+            <div class="muted"><span id="descCount">0</span>/2200</div>
+          </div>
+          <textarea id="desc" placeholder="설명을 입력하세요 (선택, 최대 2200자)" maxlength="2200"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="location">위치 추가</label>
+          <input id="location" class="input" type="text" placeholder="예: 서울특별시" />
+        </div>
+
+        <div class="field">
+          <label for="cowork">공동 작업자 추가 (쉼표로 구분)</label>
+          <input id="cowork" class="input" type="text" placeholder="예: @alice, @bob" />
+        </div>
+      </div>
+
+      <details class="accordion panel" id="acc-tag">
+        <summary>사람 태그하기</summary>
+        <div class="muted">이미지가 보이는 상태에서 사진을 클릭하면 태그를 추가할 수 있어요. (최대 10개)</div>
+        <div class="actions" id="tagList"></div>
+      </details>
+
+      <details class="accordion panel">
+        <summary>접근성</summary>
+        <div class="field">
+          <label for="alt">대체 텍스트(ALT)</label>
+          <input id="alt" class="input" type="text" maxlength="100" placeholder="시각 설명(선택, 최대 100자)" />
+        </div>
+      </details>
+
+      <details class="accordion panel">
+        <summary>고급 설정</summary>
+        <div class="field">
+          <label>댓글 허용</label>
+          <label class="small">
+            <input type="checkbox" id="allowComments" checked />
+            허용
+          </label>
+        </div>
+        <div class="field">
+          <span class="danger" id="resetForm">이 글 초기화</span>
+        </div>
+      </details>
+
+      <div class="panel small muted">
+        저장 시 데모용으로만 <b>localStorage</b>에 임시 보관합니다.
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // ---------- 엘리먼트 ----------
+    const fileInput = document.getElementById('fileInput');
+    const dropArea  = document.getElementById('dropArea');
+    const preview   = document.getElementById('preview');
+    const shareBtn  = document.getElementById('shareBtn');
+
+    const titleEl   = document.getElementById('title');
+    const descEl    = document.getElementById('desc');
+    const titleCount= document.getElementById('titleCount');
+    const descCount = document.getElementById('descCount');
+
+    const tagList   = document.getElementById('tagList');
+    const resetBtn  = document.getElementById('resetForm');
+
+    // ---------- 상태 ----------
+    let imageDataURL = '';
+    /** @type {{x:number, y:number, name:string, id:string}[]} */
+    let tags = [];
+
+    // ---------- 유틸 ----------
+    const by = (min, val) => Math.max(0, Math.min(min, val));
+    const uid = ()=>'t'+Math.random().toString(36).slice(2,9);
+
+    function updateCounters(){
+      titleCount.textContent = String(titleEl.value.length);
+      descCount.textContent  = String(descEl.value.length);
+    }
+
+    function validate(){
+      // 1) 이미지 필요  2) 제목 2~50자  3) 파일 용량/타입  4) ALT 100자 이내 (HTML maxlength로 보조)
+      const okImage = !!imageDataURL;
+      const okTitle = titleEl.value.trim().length >= 2 && titleEl.value.trim().length <= 50;
+
+      shareBtn.disabled = !(okImage && okTitle);
+    }
+
+    function setPreview(url){
+      imageDataURL = url;
+      preview.style.display = 'block';
+      preview.style.backgroundImage = `url('${url}')`;
+      document.getElementById('acc-tag').open = true;
+      validate();
+    }
+
+    async function readFile(file){
+      if(!file) return;
+      const isImg = file.type.startsWith('image/');
+      if(!isImg){ alert('이미지 파일만 업로드할 수 있어요.'); return; }
+      if(file.size > 10 * 1024 * 1024){ alert('10MB 이하 이미지만 가능합니다.'); return; }
+
+      const reader = new FileReader();
+      reader.onload = () => setPreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+
+    // ---------- 업로드: 클릭/드래그 ----------
+    fileInput.addEventListener('change', e => readFile(e.target.files?.[0]));
+    ['dragenter','dragover'].forEach(ev =>
+      dropArea.addEventListener(ev, e => {e.preventDefault(); dropArea.classList.add('dragover');})
+    );
+    ['dragleave','drop'].forEach(ev =>
+      dropArea.addEventListener(ev, e => {e.preventDefault(); dropArea.classList.remove('dragover');})
+    );
+    dropArea.addEventListener('drop', e => {
+      const file = e.dataTransfer?.files?.[0];
+      readFile(file);
+    });
+
+    // ---------- 카운터/검증 ----------
+    titleEl.addEventListener('input', ()=>{ updateCounters(); validate(); });
+    descEl.addEventListener('input',  ()=>{ updateCounters(); });
+
+    updateCounters(); validate();
+
+    // ---------- 태깅: 미리보기 클릭하면 태그 추가 ----------
+    preview.addEventListener('click', (e) => {
+      if(!imageDataURL) return;
+      if(tags.length >= 10){ alert('태그는 최대 10개까지 가능합니다.'); return; }
+
+      const rect = preview.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      const name = prompt('태그할 이름을 입력하세요 (예: @username)');
+      if(!name) return;
+
+      const t = { id: uid(), x, y, name: name.trim() };
+      tags.push(t);
+      drawTag(t);
+      renderTagList();
+    });
+
+    function drawTag(t){
+      const el = document.createElement('div');
+      el.className = 'tag';
+      el.textContent = t.name;
+      el.style.left = t.x + '%';
+      el.style.top  = t.y + '%';
+      el.dataset.id = t.id;
+      el.title = '태그 삭제';
+      el.addEventListener('click', () => {
+        tags = tags.filter(x=>x.id!==t.id);
+        el.remove();
+        renderTagList();
+      });
+      preview.appendChild(el);
+    }
+
+    function renderTagList(){
+      tagList.innerHTML = '';
+      tags.forEach(t=>{
+        const pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.innerHTML = `<span>${t.name}</span><span class="x" title="삭제">✕</span>`;
+        pill.querySelector('.x')?.addEventListener('click', ()=>{
+          // 삭제
+          tags = tags.filter(x=>x.id!==t.id);
+          preview.querySelector(`[data-id="${t.id}"]`)?.remove();
+          renderTagList();
+        });
+        tagList.appendChild(pill);
+      });
+    }
+
+    // ---------- 초기화 ----------
+    resetBtn.addEventListener('click', ()=>{
+      if(!confirm('작성 중인 내용을 초기화할까요?')) return;
+      imageDataURL=''; preview.style.display='none'; preview.style.backgroundImage='none';
+      titleEl.value=''; descEl.value=''; document.getElementById('location').value='';
+      document.getElementById('cowork').value=''; document.getElementById('alt').value='';
+      tags = []; renderTagList(); preview.querySelectorAll('.tag').forEach(n=>n.remove());
+      updateCounters(); validate();
+    });
+
+    // ---------- 공유(데모: localStorage 저장 후 index로 이동) ----------
+    shareBtn.addEventListener('click', ()=>{
+      validate();
+      if(shareBtn.disabled) return;
+
+      const post = {
+        id: uid(),
+        image: imageDataURL,
+        title: titleEl.value.trim(),
+        desc: descEl.value.trim(),
+        location: document.getElementById('location').value.trim(),
+        cowork: document.getElementById('cowork').value.trim(),
+        alt: document.getElementById('alt').value.trim(),
+        allowComments: document.getElementById('allowComments').checked,
+        tags,
+        createdAt: new Date().toISOString()
+      };
+      // 데모 저장
+      const key = 'demo_posts';
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.unshift(post);
+      localStorage.setItem(key, JSON.stringify(arr));
+
+      alert('공유 완료! (데모 저장)');
+      location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>

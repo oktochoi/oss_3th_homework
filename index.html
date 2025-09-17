@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Instagram Clone</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">Instagram</h2>
+      <nav>
+        <ul>
+          <li>🏠 홈</li>
+          <li>🔍 검색</li>
+          <li>🎬 릴스</li>
+          <li>✉️ 메시지</li>
+          <li>❤️ 알림</li>
+          <li><a href="add.html" style="color:inherit; text-decoration:none;">➕ 만들기</a></li>
+          <li>👤 프로필</li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Profile section -->
+      <section class="profile">
+        <div class="avatar"></div>
+        <div class="info">
+          <h2>okto.o00o</h2>
+          <button class="edit-btn">프로필 편집</button>
+          <div class="stats">
+            <span id="postCount">게시물 0</span>
+            <span>팔로워 0</span>
+            <span>팔로우 0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feed grid -->
+      <section class="feed" id="feed">
+        <!-- 저장된 게시물이 여기에 채워짐 -->
+      </section>
+    </main>
+  </div>
+
+ <script>
+  (function mountSaved(){
+    const key = 'demo_posts';
+    const arr = JSON.parse(localStorage.getItem(key) || '[]');
+    const grid = document.getElementById('feed');
+    const postCount = document.getElementById('postCount');
+
+    postCount.textContent = `게시물 ${arr.length}`;
+
+    if(!arr.length){
+      grid.innerHTML = `<div style="color:#aaa; text-align:center; padding:40px;">아직 게시물이 없습니다.</div>`;
+      return;
+    }
+
+    arr.forEach(p=>{
+      const el = document.createElement('div');
+      el.className = 'post';
+      el.dataset.id = p.id;
+      el.style.background = `#111 url(${p.image}) center/cover no-repeat`;
+      el.title = p.title || '';
+      grid.prepend(el);
+    });
+
+    // 카드 클릭 → view.html?id=...
+    grid.addEventListener('click', (e)=>{
+      const card = e.target.closest('.post');
+      if(!card) return;
+      location.href = `view.html?id=${encodeURIComponent(card.dataset.id)}`;
+    });
+  })();
+</script>
+
+</body>
+</html>

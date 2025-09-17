@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Web page</title>
+  <style>
+    #addBtn { background: blue; color: white; }
+    #delBtn { background: green; color: white; }
+  </style>
+</head>
+<body>
+  <h1>Dynamic Web page</h1>
+  
+  <input type="text" id="itemsInput" placeholder=",를 기준으로 입력해주세요">
+  <button type="button" id="addBtn">추가</button>
+  <button type="button" id="delBtn">삭제</button>
+  
+  <ul id="list"></ul>
+
+  <script>
+    const input = document.getElementById("itemsInput");
+    const addBtn = document.getElementById("addBtn");
+    const delBtn = document.getElementById("delBtn");
+    const list  = document.getElementById("list");
+
+    function parseItems(str){
+      return str.split(",").map(s => s.trim()).filter(s => s.length > 0);
+    }
+
+    function getListValues(){
+      return Array.from(list.querySelectorAll("li")).map(li => li.textContent);
+    }
+
+    function addItems(items) {
+      const existing = new Set(getListValues().map(v => v.toLowerCase()));
+      items.forEach(item => {
+        const key = item.toLowerCase();
+        if (existing.has(key)) return; // 중복 방지
+        const li = document.createElement("li");
+        li.textContent = item;
+        list.appendChild(li);
+        existing.add(key);
+      });
+    }
+
+    function removeItems(items) {
+      if (items.length === 0) return;
+      const toDelete = new Set(items.map(v => v.toLowerCase()));
+      Array.from(list.querySelectorAll("li")).forEach(li => {
+        if (toDelete.has(li.textContent.toLowerCase())) {
+          li.remove();
+        }
+      });
+    }
+
+    addBtn.addEventListener("click", () => {
+      const items = parseItems(input.value);
+      addItems(items);
+      input.value = "";
+    });
+
+    delBtn.addEventListener("click", () => {
+      const items = parseItems(input.value);
+      removeItems(items);
+      input.value = "";
+    });
+    
+  </script>
+</body>
+</html>
