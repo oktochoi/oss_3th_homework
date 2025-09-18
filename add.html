@@ -160,7 +160,7 @@
 
         <div class="field">
           <label for="cowork">공동 작업자 추가 (쉼표로 구분)</label>
-          <input id="cowork" class="input" type="text" placeholder="예: @alice, @bob" />
+          <input id="cowork" class="input" type="text" placeholder="예: @okto, @oktototo" />
         </div>
       </div>
 
@@ -191,10 +191,6 @@
           <span class="danger" id="resetForm">이 글 초기화</span>
         </div>
       </details>
-
-      <div class="panel small muted">
-        저장 시 데모용으로만 <b>localStorage</b>에 임시 보관합니다.
-      </div>
     </aside>
   </div>
 
@@ -356,7 +352,7 @@
       arr.unshift(post);
       localStorage.setItem(key, JSON.stringify(arr));
 
-      alert('공유 완료! (데모 저장)');
+      alert('저장되었습니다.');
       location.href = 'index.html';
     });
   </script>

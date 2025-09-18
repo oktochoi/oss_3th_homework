@@ -28,14 +28,22 @@ body {
 }
 
 .sidebar li {
-  margin: 15px 0;
+  margin: 25px 0;
   cursor: pointer;
+}
+
+.sidebar img{
+  padding-right: 5px;
+}
+
+.sidebar span{
+  padding-left: 5px;
 }
 
 /* Main */
 .main {
   flex: 1;
-  padding: 20px;
+  padding: 75px 100px;
 }
 
 /* Profile */
@@ -46,11 +54,12 @@ body {
 }
 
 .avatar {
-  width: 100px;
-  height: 100px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   background: gray;
   margin-right: 20px;
+  margin-bottom: 30px;
 }
 
 .info h2 {
@@ -76,12 +85,12 @@ body {
 .feed {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 30px;
 }
 
 .post {
   background: #222;
-  height: 200px;
+  height: 250px;
   display: flex;
   align-items: center;
   justify-content: center;
