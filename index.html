@@ -124,7 +124,7 @@
                 <span>만들기</span>
               </a>
             </li>
-            <li><img href src="avatar.svg"><span>프로필</span></li>
+            <li><img href src="avatar.svg" /><span>프로필</span></li>
           </ul>
         </nav>
       </aside>
@@ -166,12 +166,58 @@
           return;
         }
 
+        // HTML 이스케이프 유틸
+        const escapeHTML = (s) =>
+          String(s ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+        // style 속성용 URL 이스케이프(따옴표 방어)
+        const escAttr = (s) =>
+          String(s ?? "")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+        // 날짜 보기 좋게 포맷
+        const fmtDate = (iso) => {
+          if (!iso) return "";
+          const d = new Date(iso);
+          // 예: 2025. 9. 19. 09:12
+          return d.toLocaleString("ko-KR", {
+            year: "numeric",
+            month: "numeric",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        };
+
         arr.forEach((p) => {
           const el = document.createElement("div");
           el.className = "post";
           el.dataset.id = p.id;
-          el.style.background = `#111 url(${p.image}) center/cover no-repeat`;
-          el.title = p.title || "";
+
+          const title = p.title ?? "";
+          const desc = p.desc ?? p.description ?? "";
+          const loc = p.location ?? "";
+          const created = p.createdAt ?? "";
+
+          el.innerHTML = `
+    <div class="post-thumb" style="background-image:url('${escAttr(
+      p.image
+    )}')"></div>
+    <div class="post-meta">
+      <div class="post-title">${escapeHTML(title)}</div>
+      <div class="post-desc">${escapeHTML(desc)}</div>
+      <div class="post-tags">📅 ${escapeHTML(
+        fmtDate(created)
+      )} · ${escapeHTML(loc)}</div>
+    </div>
+  `;
+
           grid.prepend(el);
         });
 

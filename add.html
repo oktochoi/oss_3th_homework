@@ -105,6 +105,11 @@
     .actions{display:flex; gap:8px; flex-wrap:wrap}
     .small{font-size:12px}
     .danger{color:#ff6b6b; cursor:pointer}
+
+    /* Error 표시 */
+    .input-error { border-color: #ff6b6b !important; }
+    .help { font-size:12px; color:#aaa; margin-top:4px; }
+    .help.error { color:#ff6b6b; }
   </style>
 </head>
 <body>
@@ -112,7 +117,7 @@
   <div class="topbar">
     <a href="index.html" class="back">←</a>
     <div class="title">새 게시물 만들기</div>
-    <button id="shareBtn" class="share" disabled>공유하기</button>
+    <button id="shareBtn" class="share" disabled>추가</button>
   </div>
 
   <!-- Content -->
@@ -137,30 +142,38 @@
           <div class="name">okto.o0o0</div>
         </div>
 
+        <!-- 제목 -->
         <div class="field">
           <div class="row">
-            <label for="title">제목</label>
+            <label for="title">제목<span style="color:#ff6b6b">*</span></label>
             <div class="muted"><span id="titleCount">0</span>/50</div>
           </div>
           <input id="title" class="input" type="text" placeholder="제목을 입력하세요 (필수)" maxlength="50" required />
+          <div id="err-title" class="help"></div>
         </div>
 
+        <!-- 설명 -->
         <div class="field">
           <div class="row">
-            <label for="desc">설명</label>
+            <label for="desc">설명<span style="color:#ff6b6b">*</span></label>
             <div class="muted"><span id="descCount">0</span>/2200</div>
           </div>
-          <textarea id="desc" placeholder="설명을 입력하세요 (선택, 최대 2200자)" maxlength="2200"></textarea>
+          <textarea id="desc" placeholder="설명을 입력하세요 (필수, 5~2200자)" maxlength="2200" required></textarea>
+          <div id="err-desc" class="help"></div>
         </div>
 
+        <!-- 위치 -->
         <div class="field">
-          <label for="location">위치 추가</label>
-          <input id="location" class="input" type="text" placeholder="예: 서울특별시" />
+          <label for="location">위치 추가<span style="color:#ff6b6b">*</span></label>
+          <input id="location" class="input" type="text" placeholder="예: 서울특별시" required />
+          <div id="err-location" class="help"></div>
         </div>
 
+        <!-- 공동작업자 -->
         <div class="field">
-          <label for="cowork">공동 작업자 추가 (쉼표로 구분)</label>
-          <input id="cowork" class="input" type="text" placeholder="예: @okto, @oktototo" />
+          <label for="cowork">공동 작업자 추가 (쉼표로 구분)<span style="color:#ff6b6b">*</span></label>
+          <input id="cowork" class="input" type="text" placeholder="예: @okto, @oktototo" required />
+          <div id="err-cowork" class="help"></div>
         </div>
       </div>
 
@@ -211,11 +224,9 @@
 
     // ---------- 상태 ----------
     let imageDataURL = '';
-    /** @type {{x:number, y:number, name:string, id:string}[]} */
-    let tags = [];
+    /** @type {{id:string,x:number,y:number,name:string}[]} */ let tags = [];
 
     // ---------- 유틸 ----------
-    const by = (min, val) => Math.max(0, Math.min(min, val));
     const uid = ()=>'t'+Math.random().toString(36).slice(2,9);
 
     function updateCounters(){
@@ -223,12 +234,76 @@
       descCount.textContent  = String(descEl.value.length);
     }
 
-    function validate(){
-      // 1) 이미지 필요  2) 제목 2~50자  3) 파일 용량/타입  4) ALT 100자 이내 (HTML maxlength로 보조)
-      const okImage = !!imageDataURL;
-      const okTitle = titleEl.value.trim().length >= 2 && titleEl.value.trim().length <= 50;
+    function setError(el, helpEl, msg) {
+      if (msg) {
+        el.classList.add('input-error');
+        helpEl.textContent = msg;
+        helpEl.classList.add('error');
+      } else {
+        el.classList.remove('input-error');
+        helpEl.textContent = '';
+        helpEl.classList.remove('error');
+      }
+    }
 
-      shareBtn.disabled = !(okImage && okTitle);
+    function parseCowork(raw) {
+      return raw.split(',').map(s => s.trim()).filter(Boolean);
+    }
+    const coworkRe = /^@[\w.]{2,30}$/; // @로 시작, 영숫자/밑줄/점, 2~30자
+
+    function validate(showMessages = false) {
+      let ok = true;
+
+      const errTitle = document.getElementById('err-title');
+      const errDesc  = document.getElementById('err-desc');
+      const errLoc   = document.getElementById('err-location');
+      const errCo    = document.getElementById('err-cowork');
+
+      // 이미지 필수
+      const okImage = !!imageDataURL;
+      if (showMessages && !okImage) alert('이미지를 추가하세요 (필수).');
+
+      // 제목: 2~50자
+      const title = titleEl.value.trim();
+      const okTitle = title.length >= 2 && title.length <= 50;
+      if (showMessages) setError(titleEl, errTitle, okTitle ? '' : '제목은 2~50자여야 합니다.');
+      ok &&= okTitle;
+
+      // 설명: 5~2200자
+      const desc = descEl.value.trim();
+      const okDesc = desc.length >= 5 && desc.length <= 2200;
+      if (showMessages) setError(descEl, errDesc, okDesc ? '' : '설명은 5~2200자여야 합니다.');
+      ok &&= okDesc;
+
+      // 위치: 공백 제외 2자+
+      const locationEl = document.getElementById('location');
+      const locationVal = locationEl.value.trim();
+      const okLoc = locationVal.length >= 2;
+      if (showMessages) setError(locationEl, errLoc, okLoc ? '' : '위치를 입력하세요 (2자 이상).');
+      ok &&= okLoc;
+
+      // 공동작업자: 1명+, 형식 검사
+      const coworkEl = document.getElementById('cowork');
+      const coworkers = parseCowork(coworkEl.value);
+      const okCoworkNonEmpty = coworkers.length >= 1;
+      const okCoworkForm = okCoworkNonEmpty && coworkers.every(u => coworkRe.test(u));
+      if (showMessages) {
+        if (!okCoworkNonEmpty) {
+          setError(coworkEl, errCo, '최소 1명의 공동작업자를 입력하세요. 예: @okto');
+        } else if (!okCoworkForm) {
+          setError(coworkEl, errCo, '형식이 올바르지 않습니다. 예: @okto, @oktototo');
+        } else {
+          setError(coworkEl, errCo, '');
+        }
+      }
+      ok &&= okCoworkForm;
+
+      // 태그 최대 10개 (이중 방어)
+      const okTags = tags.length <= 10;
+      ok &&= okTags;
+
+      shareBtn.disabled = !(ok && okImage);
+      return ok && okImage;
     }
 
     function setPreview(url){
@@ -236,7 +311,7 @@
       preview.style.display = 'block';
       preview.style.backgroundImage = `url('${url}')`;
       document.getElementById('acc-tag').open = true;
-      validate();
+      validate(false);
     }
 
     async function readFile(file){
@@ -250,7 +325,7 @@
       reader.readAsDataURL(file);
     }
 
-    // ---------- 업로드: 클릭/드래그 ----------
+    // 업로드: 클릭/드래그
     fileInput.addEventListener('change', e => readFile(e.target.files?.[0]));
     ['dragenter','dragover'].forEach(ev =>
       dropArea.addEventListener(ev, e => {e.preventDefault(); dropArea.classList.add('dragover');})
@@ -263,13 +338,15 @@
       readFile(file);
     });
 
-    // ---------- 카운터/검증 ----------
-    titleEl.addEventListener('input', ()=>{ updateCounters(); validate(); });
-    descEl.addEventListener('input',  ()=>{ updateCounters(); });
+    // 카운터/실시간 검증
+    titleEl.addEventListener('input', ()=>{ updateCounters(); validate(false); });
+    descEl.addEventListener('input',  ()=>{ updateCounters(); validate(false); });
+    document.getElementById('location').addEventListener('input', ()=> validate(false));
+    document.getElementById('cowork').addEventListener('input',   ()=> validate(false));
 
-    updateCounters(); validate();
+    updateCounters(); validate(false);
 
-    // ---------- 태깅: 미리보기 클릭하면 태그 추가 ----------
+    // 태깅: 미리보기 클릭 → 태그 추가
     preview.addEventListener('click', (e) => {
       if(!imageDataURL) return;
       if(tags.length >= 10){ alert('태그는 최대 10개까지 가능합니다.'); return; }
@@ -310,7 +387,6 @@
         pill.className = 'pill';
         pill.innerHTML = `<span>${t.name}</span><span class="x" title="삭제">✕</span>`;
         pill.querySelector('.x')?.addEventListener('click', ()=>{
-          // 삭제
           tags = tags.filter(x=>x.id!==t.id);
           preview.querySelector(`[data-id="${t.id}"]`)?.remove();
           renderTagList();
@@ -319,20 +395,31 @@
       });
     }
 
-    // ---------- 초기화 ----------
+    // 초기화
     resetBtn.addEventListener('click', ()=>{
       if(!confirm('작성 중인 내용을 초기화할까요?')) return;
       imageDataURL=''; preview.style.display='none'; preview.style.backgroundImage='none';
-      titleEl.value=''; descEl.value=''; document.getElementById('location').value='';
-      document.getElementById('cowork').value=''; document.getElementById('alt').value='';
-      tags = []; renderTagList(); preview.querySelectorAll('.tag').forEach(n=>n.remove());
-      updateCounters(); validate();
+      titleEl.value=''; descEl.value='';
+      document.getElementById('location').value='';
+      document.getElementById('cowork').value='';
+      document.getElementById('alt').value='';
+      tags = [];
+      // 태그 버블 제거
+      preview.querySelectorAll('.tag').forEach(n=>n.remove());
+      // 에러 리셋
+      ['err-title','err-desc','err-location','err-cowork'].forEach(id=>{
+        const el = document.getElementById(id);
+        if (el) { el.textContent=''; el.classList.remove('error'); }
+      });
+      [titleEl, descEl, document.getElementById('location'), document.getElementById('cowork')]
+        .forEach(i=> i.classList.remove('input-error'));
+      updateCounters(); validate(false);
     });
 
-    // ---------- 공유(데모: localStorage 저장 후 index로 이동) ----------
+    // 추가(저장)
     shareBtn.addEventListener('click', ()=>{
-      validate();
-      if(shareBtn.disabled) return;
+      const ok = validate(true);
+      if(!ok) return;
 
       const post = {
         id: uid(),
@@ -346,13 +433,13 @@
         tags,
         createdAt: new Date().toISOString()
       };
-      // 데모 저장
+
       const key = 'demo_posts';
       const arr = JSON.parse(localStorage.getItem(key) || '[]');
       arr.unshift(post);
       localStorage.setItem(key, JSON.stringify(arr));
 
-      alert('저장되었습니다.');
+      alert('게시물이 추가되었습니다.');
       location.href = 'index.html';
     });
   </script>
