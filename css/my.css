@@ -1,0 +1,105 @@
+/* my.css : 오직 반응형 오버라이드만 정의 */
+/* --------------------------------------- */
+/* 공통 토큰이 필요하면 base.css 의 :root 를 사용 (여기선 새로 정의 X) */
+
+/* ====== 태블릿 이하 (작업 캔버스/에디트 화면) ====== */
+@media (max-width: 980px) {
+  /* 공통 레이아웃 */
+  .wrap {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  /* 좌측 미디어/캔버스 영역 */
+  .canvas,
+  .media {
+    min-height: 300px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* 드롭 프레임/미리보기 영역 */
+  .drop,
+  .frame {
+    width: min(820px, 94%);
+    aspect-ratio: 4/3; /* 유지 */
+  }
+
+  /* 오른쪽 사이드 패널 스크롤/패딩 보정 */
+  .side {
+    height: auto;
+    max-height: none;
+  }
+
+  /* 상단바는 그대로 sticky, 버튼 간격만 살짝 */
+  .actions { gap: 6px; }
+}
+
+/* ====== 모바일 (프로필/피드 화면) ====== */
+@media (max-width: 768px) {
+  /* 메인 컨테이너를 세로 스택으로 */
+  .container {
+    display: block; /* 기존 desktop flex 해제 */
+  }
+
+  /* 메인 영역 패딩 축소 + 하단 네비 여백 확보 */
+  .main {
+    padding: 16px 16px 72px;
+  }
+
+  /* 하단 고정 네비게이션(사이드바) */
+  .sidebar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 56px;
+    width: 100%;
+    background: #111;
+    border-top: 1px solid var(--line);
+    padding: 0;
+    z-index: 100;
+  }
+  .sidebar .logo { display: none; }
+  .sidebar ul {
+    display: flex; justify-content: space-around; align-items: center;
+    height: 100%; margin: 0; padding: 0; list-style: none;
+  }
+  .sidebar li {
+    margin: 0; font-size: 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    cursor: pointer;
+  }
+  .sidebar img { padding: 0; }
+  .sidebar span { font-size: 11px; padding-left: 0; }
+
+  /* 프로필 블록 정렬 전환 */
+  .profile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .avatar {
+    width: 96px; height: 96px;
+    margin-bottom: 0;
+  }
+  .stats { gap: 12px; }
+
+  /* 피드 그리드 최소 칼럼 2개 */
+  .feed {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  /* 카드 하단 메타 사이즈 축소 */
+  .post-meta { padding: 6px 8px; font-size: 11px; }
+  .post-title { font-size: 12px; }
+  .post-desc  { font-size: 11px; }
+  .post-tags  { font-size: 11px; }
+}
+
+/* (선택) 극소형 기기 추가 미세 조정 */
+@media (max-width: 360px) {
+  .feed { gap: 10px; }
+  .sidebar { height: 52px; }
+  .main { padding: 12px 12px 64px; }
+}
